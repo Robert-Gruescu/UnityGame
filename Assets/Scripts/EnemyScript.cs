@@ -1,0 +1,188 @@
+
+using UnityEngine;
+
+public class EnemyScript : MonoBehaviour
+{
+    public int maxHealth = 50;
+    public float moveSpeed = 2f;
+    public Transform pointA;   // punctul din stânga
+    public Transform pointB;   // punctul din dreapta
+    private int direction = -1; // -1 = stânga, +1 = dreapta
+    public bool inRange = false;
+    public Transform player;
+    public float attackRange = 5f;
+    public float retrieveRange = 1f;
+    public float chaseSpeed = 3f;
+    public Animator animator;
+
+    public Transform attackPoint;
+    public float attackRadius = 1f;
+    public LayerMask attackLayers;
+
+
+    void Start()
+    {
+        // Inițializare dacă este necesar
+    }
+
+    void Update()
+    {
+
+        IsActive();
+
+        if (maxHealth <= 0)
+        {
+            Death();
+
+        }
+        EnemyAttack();
+    }
+
+    void Flip()
+    {
+        direction *= -1;
+
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+
+    //Logica de attack + animatie
+    void EnemyAttack()
+    {
+        if (Vector2.Distance(transform.position, player.position) <= attackRange)
+        {
+            inRange = true;
+        }
+        else
+        {
+            inRange = false;
+        }
+
+        if (inRange)
+        {
+            EnemyPositions();
+
+            // Logica de atac aici
+            if (Vector2.Distance(transform.position, player.position) > retrieveRange)
+            {
+                animator.SetBool("Attack1", false);
+                transform.position = Vector2.MoveTowards(transform.position, player.position, chaseSpeed * Time.deltaTime);
+            }
+            else
+            {
+                animator.SetBool("Attack1", true);
+            }
+
+
+        }
+        else
+        {
+            Patrol();
+        }
+
+    }
+
+    void Patrol()
+    {
+        // Mișcare bazată pe direcția actuală
+        transform.Translate(Vector2.right * direction * moveSpeed * Time.deltaTime);
+
+        // Schimbare direcție la punctele A și B
+        if (direction == -1 && transform.position.x <= pointA.position.x)
+        {
+            Flip();
+        }
+
+        if (direction == 1 && transform.position.x >= pointB.position.x)
+        {
+            Flip();
+        }
+    }
+
+
+    void EnemyPositions()
+    {
+        if (player.position.x < transform.position.x)
+        {
+            // Jucătorul este în stânga inamicului
+            if (direction != -1)
+            {
+                Flip();
+            }
+        }
+        else
+        {
+            // Jucătorul este în dreapta inamicului
+            if (direction != 1)
+            {
+                Flip();
+            }
+        }
+
+    }
+
+    //Logica de attack(punctul de coleziune)
+    public void Attack()
+    {
+        Collider2D[] collInfo = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, attackLayers);
+        if (collInfo.Length > 0)
+        {
+            if (collInfo[0].GetComponent<Player>() != null)
+            {
+                collInfo[0].GetComponent<Player>().TakeDamage(10);
+            }
+
+        }
+
+    }
+
+
+    public void TakeDamage(int damage)
+    {
+        if (maxHealth <= 0)
+        {
+            return;
+        }
+        maxHealth -= damage;
+        animator.SetTrigger("Hurt");
+
+    }
+
+
+
+
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+
+        if (attackPoint == null)
+        {
+            return;
+        }
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(attackPoint.position, attackRadius);
+    }
+
+    void Death()
+    {
+        Debug.Log(this.transform.name + " died.");
+        Destroy(gameObject);
+    }
+
+    //Verifica daca jocul este activ ( daca playerul a murit)
+    void IsActive()
+    {
+        if (FindObjectOfType<GameManager>().isGameActive == false)
+        {
+            return;
+        }
+
+
+
+    }
+
+}
