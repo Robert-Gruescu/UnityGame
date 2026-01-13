@@ -340,6 +340,7 @@ public class Player : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
+
         // 🔥 Oprește TOT
         movement = 0;
         rb.linearVelocity = Vector2.zero;
@@ -349,10 +350,23 @@ public class Player : MonoBehaviour
         IsBlocking = false;
         animator.SetBool("IsBlocking", false);
         animator.SetBool("isDead", true);
-        rb.linearVelocity = Vector2.zero;
+
+        // 🔥 Dezactivăm collider-ul ca inamicii să nu mai-l împingă
+        // 🔥 Dezactivăm coliziunile doar cu inamicii
+        Collider2D playerCol = GetComponent<Collider2D>();
+        EnemyScript[] enemies = FindObjectsOfType<EnemyScript>();
+        foreach (EnemyScript enemy in enemies)
+        {
+            Collider2D enemyCol = enemy.GetComponent<Collider2D>();
+            if (playerCol != null && enemyCol != null)
+                Physics2D.IgnoreCollision(playerCol, enemyCol, true);
+        }
+
         FindObjectOfType<GameManager>().isGameActive = false;
         //Destroy(gameObject);
-
-
     }
 }
+
+
+
+
