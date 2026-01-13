@@ -51,6 +51,17 @@ public class EnemyScript : MonoBehaviour
     //Logica de attack + animatie
     void EnemyAttack()
     {
+        // 1️⃣ Verificăm dacă jocul este activ și playerul este viu
+        Player playerScript = player.GetComponent<Player>();
+        if (playerScript == null || playerScript.isDead || !FindObjectOfType<GameManager>().isGameActive)
+        {
+            // Playerul este mort sau jocul oprit → inamicul patrulează
+            Patrol();
+            animator.SetBool("Attack1", false); // oprim animatia de atac
+            return;
+        }
+
+        // 2️⃣ Dacă playerul este viu → atac normal
         if (Vector2.Distance(transform.position, player.position) <= attackRange)
         {
             inRange = true;
@@ -64,7 +75,6 @@ public class EnemyScript : MonoBehaviour
         {
             EnemyPositions();
 
-            // Logica de atac aici
             if (Vector2.Distance(transform.position, player.position) > retrieveRange)
             {
                 animator.SetBool("Attack1", false);
@@ -74,15 +84,13 @@ public class EnemyScript : MonoBehaviour
             {
                 animator.SetBool("Attack1", true);
             }
-
-
         }
         else
         {
             Patrol();
         }
-
     }
+
 
     void Patrol()
     {
