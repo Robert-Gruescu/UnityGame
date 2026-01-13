@@ -340,6 +340,12 @@ public class Player : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
+        // 🔥 Oprește TOT
+        movement = 0;
+        rb.linearVelocity = Vector2.zero;
+
+        // 🔥 Resetăm orice animație activă
+        animator.SetFloat("Run", 0f);
         IsBlocking = false;
         animator.SetBool("IsBlocking", false);
         animator.SetBool("isDead", true);
