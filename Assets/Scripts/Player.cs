@@ -10,7 +10,7 @@ public class Player : MonoBehaviour
 
     public int coinCount = 0;
     // --- Health ---
-    public int maxHealth = 30;
+    public int maxHealth = 100;
 
     //Parameters
     public bool isDodging = false;

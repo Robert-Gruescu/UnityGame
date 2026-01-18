@@ -1,8 +1,14 @@
-
+using System;
 using UnityEngine;
 
 public class EnemyScript : MonoBehaviour
 {
+    // Event fired when this enemy dies. Subscribers receive the EnemyScript instance.
+    public static Action<EnemyScript> OnEnemyDied;
+    
+    // Static counter for every 2nd enemy killed
+    private static int totalEnemiesKilledGlobal = 0;
+
     public int maxHealth = 50;
     public float moveSpeed = 2f;
     public Transform pointA;   // punctul din stânga
@@ -18,6 +24,8 @@ public class EnemyScript : MonoBehaviour
     public Transform attackPoint;
     public float attackRadius = 1f;
     public LayerMask attackLayers;
+    
+    public GameObject coinPrefab; // assign Coin.prefab here
 
 
     void Start()
@@ -158,6 +166,22 @@ public class EnemyScript : MonoBehaviour
 
     }
 
+    // Public helper to set initial facing/direction from external systems (spawner)
+    // dir should be 1 (move right) or -1 (move left)
+    public void SetDirection(int dir)
+    {
+        if (dir != 1 && dir != -1)
+            return;
+
+        if (direction != dir)
+        {
+            direction = dir;
+            Vector3 scale = transform.localScale;
+            scale.x = Mathf.Abs(scale.x) * (dir == 1 ? 1f : -1f);
+            transform.localScale = scale;
+        }
+    }
+
 
 
 
@@ -178,6 +202,25 @@ public class EnemyScript : MonoBehaviour
     void Death()
     {
         Debug.Log(this.transform.name + " died.");
+        
+        // Increment global counter and check if every 2nd enemy
+        totalEnemiesKilledGlobal++;
+        if (totalEnemiesKilledGlobal % 2 == 0)
+        {
+            // Spawn a coin at this enemy's position
+            if (coinPrefab != null)
+            {
+                Instantiate(coinPrefab, transform.position, Quaternion.identity);
+                Debug.Log("Coin spawned at: " + transform.position);
+            }
+            else
+            {
+                Debug.LogWarning("EnemyScript: coinPrefab is not assigned on " + gameObject.name);
+            }
+        }
+        
+        // notify listeners before destroying
+        OnEnemyDied?.Invoke(this);
         Destroy(gameObject);
     }
 
