@@ -5,7 +5,7 @@ public class EnemyScript : MonoBehaviour
 {
     // Event fired when this enemy dies. Subscribers receive the EnemyScript instance.
     public static Action<EnemyScript> OnEnemyDied;
-    
+
     // Static counter for every 2nd enemy killed
     private static int totalEnemiesKilledGlobal = 0;
 
@@ -24,7 +24,7 @@ public class EnemyScript : MonoBehaviour
     public Transform attackPoint;
     public float attackRadius = 1f;
     public LayerMask attackLayers;
-    
+
     public GameObject coinPrefab; // assign Coin.prefab here
 
 
@@ -102,18 +102,13 @@ public class EnemyScript : MonoBehaviour
 
     void Patrol()
     {
-        // Mișcare bazată pe direcția actuală
-        transform.Translate(Vector2.right * direction * moveSpeed * Time.deltaTime);
+        // Orientare spre player
+        EnemyPositions();
 
-        // Schimbare direcție la punctele A și B
-        if (direction == -1 && transform.position.x <= pointA.position.x)
+        // Vânează playerul constant în loc de patrulare
+        if (player != null)
         {
-            Flip();
-        }
-
-        if (direction == 1 && transform.position.x >= pointB.position.x)
-        {
-            Flip();
+            transform.position = Vector2.MoveTowards(transform.position, player.position, moveSpeed * Time.deltaTime);
         }
     }
 
@@ -202,7 +197,7 @@ public class EnemyScript : MonoBehaviour
     void Death()
     {
         Debug.Log(this.transform.name + " died.");
-        
+
         // Increment global counter and check if every 2nd enemy
         totalEnemiesKilledGlobal++;
         if (totalEnemiesKilledGlobal % 2 == 0)
@@ -218,7 +213,7 @@ public class EnemyScript : MonoBehaviour
                 Debug.LogWarning("EnemyScript: coinPrefab is not assigned on " + gameObject.name);
             }
         }
-        
+
         // notify listeners before destroying
         OnEnemyDied?.Invoke(this);
         Destroy(gameObject);

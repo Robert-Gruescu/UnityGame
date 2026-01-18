@@ -138,48 +138,13 @@ public class WaveSpawner : MonoBehaviour
         Player playerComponent = FindObjectOfType<Player>();
         Transform playerTransform = playerComponent != null ? playerComponent.transform : null;
 
-        if (w.spawnMode == SpawnMode.Single)
+        // Spawn toți inamicii doar pe rightSpawn (+20)
+        for (int i = 0; i < w.totalEnemies; i++)
         {
-            // spawn half on left then half on right (if odd, extra on left)
-            int half = w.totalEnemies / 2;
-            for (int i = 0; i < half; i++)
-            {
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType))
-                    totalSpawnedThisWave++;
-                if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
-                yield return new WaitForSeconds(w.spawnInterval);
-            }
-            for (int i = 0; i < half; i++)
-            {
-                if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed, w.enemyType))
-                    totalSpawnedThisWave++;
-                if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
-                yield return new WaitForSeconds(w.spawnInterval);
-            }
-            if (w.totalEnemies % 2 != 0)
-            {
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType))
-                    totalSpawnedThisWave++;
-            }
-        }
-        else // Pair
-        {
-            int groups = w.totalEnemies / 2;
-            for (int i = 0; i < groups; i++)
-            {
-                // spawn one left and one right at the same time
-                int spawnedThisGroup = 0;
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType)) spawnedThisGroup++;
-                if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed, w.enemyType)) spawnedThisGroup++;
-                totalSpawnedThisWave += spawnedThisGroup;
-                if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
-                yield return new WaitForSeconds(w.spawnInterval);
-            }
-            if (w.totalEnemies % 2 != 0)
-            {
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType))
-                    totalSpawnedThisWave++;
-            }
+            if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed, w.enemyType))
+                totalSpawnedThisWave++;
+            if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
+            yield return new WaitForSeconds(w.spawnInterval);
         }
     }
 
@@ -237,8 +202,15 @@ public class WaveSpawner : MonoBehaviour
             es.pointA = pA.transform;
             es.pointB = pB.transform;
 
-            // set initial facing: enemies spawned from left should move right (1), from right should move left (-1)
-            es.SetDirection(fromLeft ? 1 : -1);
+            // Calculează direcția corectă în funcție de poziția playerului
+            int directionToPlayer = 1; // default: se uită la dreapta
+            if (player != null)
+            {
+                // Dacă playerul e la stânga inamicului → se uită la stânga (-1)
+                // Dacă playerul e la dreapta inamicului → se uită la dreapta (1)
+                directionToPlayer = player.position.x > spawnPoint.position.x ? 1 : -1;
+            }
+            es.SetDirection(directionToPlayer);
 
             // apply wave modifiers
             if (extraHealth != 0)
