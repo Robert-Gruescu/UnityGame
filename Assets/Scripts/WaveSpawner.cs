@@ -4,7 +4,8 @@ using UnityEngine;
 public class WaveSpawner : MonoBehaviour
 {
     [Header("References")]
-    public GameObject enemyPrefab; // assign PatrolEnemy prefab here
+    public GameObject enemyPrefab; // assign PatrolEnemy prefab here (white)
+    public GameObject enemyPrefab2; // assign PatrolEnemy 2 prefab here (yellow)
     public Transform leftSpawn;
     public Transform rightSpawn;
 
@@ -22,6 +23,7 @@ public class WaveSpawner : MonoBehaviour
         public SpawnMode spawnMode = SpawnMode.Single; // Single = one at a time, Pair = two at once
         public int extraHealth = 0;
         public float extraSpeed = 0f;
+        public int enemyType = 1; // 1 = white (enemyPrefab), 2 = yellow (enemyPrefab2)
     }
 
     public enum SpawnMode { Single, Pair }
@@ -74,13 +76,15 @@ public class WaveSpawner : MonoBehaviour
             }
         }
 
-        // if no waves defined in inspector, create 3 default waves matching your request
+        // if no waves defined in inspector, create 5 waves
         if (waves == null || waves.Length == 0)
         {
-            waves = new WaveDefinition[3];
-            waves[0] = new WaveDefinition() { name = "Wave 1", totalEnemies = 5, spawnInterval = 3f, spawnMode = SpawnMode.Single, extraHealth = 0, extraSpeed = 0f };
-            waves[1] = new WaveDefinition() { name = "Wave 2", totalEnemies = 10, spawnInterval = 3f, spawnMode = SpawnMode.Pair, extraHealth = 0, extraSpeed = 0f };
-            waves[2] = new WaveDefinition() { name = "Wave 3", totalEnemies = 20, spawnInterval = 2f, spawnMode = SpawnMode.Single, extraHealth = 30, extraSpeed = 0.5f };
+            waves = new WaveDefinition[5];
+            waves[0] = new WaveDefinition() { name = "Wave 1", totalEnemies = 5, spawnInterval = 3f, spawnMode = SpawnMode.Single, extraHealth = 0, extraSpeed = 0f, enemyType = 1 };
+            waves[1] = new WaveDefinition() { name = "Wave 2", totalEnemies = 10, spawnInterval = 3f, spawnMode = SpawnMode.Pair, extraHealth = 0, extraSpeed = 0f, enemyType = 1 };
+            waves[2] = new WaveDefinition() { name = "Wave 3", totalEnemies = 20, spawnInterval = 2f, spawnMode = SpawnMode.Single, extraHealth = 30, extraSpeed = 0.5f, enemyType = 1 };
+            waves[3] = new WaveDefinition() { name = "Wave 4", totalEnemies = 20, spawnInterval = 2f, spawnMode = SpawnMode.Single, extraHealth = 0, extraSpeed = 0f, enemyType = 2 }; // All yellow
+            waves[4] = new WaveDefinition() { name = "Wave 5", totalEnemies = 20, spawnInterval = 2f, spawnMode = SpawnMode.Single, extraHealth = 0, extraSpeed = 0f, enemyType = 3 }; // Random mix
         }
 
         StartCoroutine(RunWaves());
@@ -140,21 +144,21 @@ public class WaveSpawner : MonoBehaviour
             int half = w.totalEnemies / 2;
             for (int i = 0; i < half; i++)
             {
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed))
+                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType))
                     totalSpawnedThisWave++;
                 if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
                 yield return new WaitForSeconds(w.spawnInterval);
             }
             for (int i = 0; i < half; i++)
             {
-                if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed))
+                if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed, w.enemyType))
                     totalSpawnedThisWave++;
                 if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
                 yield return new WaitForSeconds(w.spawnInterval);
             }
             if (w.totalEnemies % 2 != 0)
             {
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed))
+                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType))
                     totalSpawnedThisWave++;
             }
         }
@@ -165,26 +169,33 @@ public class WaveSpawner : MonoBehaviour
             {
                 // spawn one left and one right at the same time
                 int spawnedThisGroup = 0;
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed)) spawnedThisGroup++;
-                if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed)) spawnedThisGroup++;
+                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType)) spawnedThisGroup++;
+                if (SpawnEnemyAt(rightSpawn, playerTransform, false, w.extraHealth, w.extraSpeed, w.enemyType)) spawnedThisGroup++;
                 totalSpawnedThisWave += spawnedThisGroup;
                 if (waveUI != null) waveUI.UpdateKillCount(enemiesKilledThisWave);
                 yield return new WaitForSeconds(w.spawnInterval);
             }
             if (w.totalEnemies % 2 != 0)
             {
-                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed))
+                if (SpawnEnemyAt(leftSpawn, playerTransform, true, w.extraHealth, w.extraSpeed, w.enemyType))
                     totalSpawnedThisWave++;
             }
         }
     }
 
     // Returns true if an enemy was actually instantiated
-    bool SpawnEnemyAt(Transform spawnPoint, Transform player, bool fromLeft, int extraHealth = 0, float extraSpeed = 0f)
+    bool SpawnEnemyAt(Transform spawnPoint, Transform player, bool fromLeft, int extraHealth = 0, float extraSpeed = 0f, int enemyType = 1)
     {
-        if (enemyPrefab == null)
+        // Select prefab based on enemyType
+        GameObject prefabToUse = enemyPrefab;
+        if (enemyType == 2)
+            prefabToUse = enemyPrefab2;
+        else if (enemyType == 3)
+            prefabToUse = Random.value > 0.5f ? enemyPrefab2 : enemyPrefab; // Random mix
+
+        if (prefabToUse == null)
         {
-            Debug.LogWarning("WaveSpawner: enemyPrefab was destroyed or unset at runtime. Skipping spawn. Make sure you assigned a prefab from the Project (Assets) window, not a scene object from Hierarchy.");
+            Debug.LogWarning("WaveSpawner: enemyPrefab is null for type " + enemyType + ". Skipping spawn.");
             return false;
         }
         if (spawnPoint == null)
@@ -196,7 +207,7 @@ public class WaveSpawner : MonoBehaviour
         GameObject go = null;
         try
         {
-            go = Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
+            go = Instantiate(prefabToUse, spawnPoint.position, Quaternion.identity);
         }
         catch (System.Exception ex)
         {
