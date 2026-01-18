@@ -9,8 +9,12 @@ public class Player : MonoBehaviour
 
 
     public int coinCount = 0;
+    public int coins = 0; // For shop system compatibility
+    
     // --- Health ---
     public int maxHealth = 100;
+    public int currentHealth;
+    public int damagePerHit = 10;
 
     //Parameters
     public bool isDodging = false;
@@ -58,6 +62,12 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        // Initialize currentHealth once
+        if (currentHealth <= 0)
+            currentHealth = maxHealth;
+
+        // Sync coins with coinCount for shop system
+        coins = coinCount;
         coinText.text = coinCount.ToString();
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
@@ -364,6 +374,13 @@ public class Player : MonoBehaviour
 
         FindObjectOfType<GameManager>().isGameActive = false;
         //Destroy(gameObject);
+    }
+
+    public void AddCoins(int amount)
+    {
+        coins += amount;
+        coinCount += amount;
+        Debug.Log("Added " + amount + " coins! Total: " + coins);
     }
 }
 
